@@ -1,0 +1,25 @@
+<Page
+    x:Class="ImmichWin.App.TimelinePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:ImmichWin.App">
+    <Grid RowDefinitions="Auto,Auto,*" Padding="12">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock x:Name="TitleText" Text="Timeline" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" />
+            <Button Content="Upload files…" Click="OnUpload" Margin="16,0,0,0" x:Name="UploadBtn" />
+            <TextBlock x:Name="UploadStatus" VerticalAlignment="Center" Opacity="0.7" />
+        </StackPanel>
+        <InfoBar x:Name="OfflineBar" Grid.Row="1" IsOpen="False" IsClosable="False" Severity="Warning"
+                 Title="Offline" Message="Server unreachable — showing photos saved on this PC." Margin="0,8,0,0" />
+        <GridView x:Name="Grid" Grid.Row="2" IsItemClickEnabled="True" ItemClick="OnItemClick"
+                  SelectionMode="None" ContainerContentChanging="OnContainerChanging" Margin="0,8,0,0">
+            <GridView.ItemTemplate>
+                <DataTemplate x:DataType="local:ThumbItem">
+                    <Grid Width="160" Height="160" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                        <Image Source="{x:Bind Thumb, Mode=OneWay}" Stretch="UniformToFill" />
+                    </Grid>
+                </DataTemplate>
+            </GridView.ItemTemplate>
+        </GridView>
+    </Grid>
+</Page>

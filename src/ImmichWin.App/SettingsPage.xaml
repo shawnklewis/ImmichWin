@@ -1,0 +1,36 @@
+<Page
+    x:Class="ImmichWin.App.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer>
+        <StackPanel Padding="16" Spacing="12" MaxWidth="720" HorizontalAlignment="Left">
+            <TextBlock Text="Settings" Style="{StaticResource TitleTextBlockStyle}" />
+
+            <TextBox x:Name="Url" Header="Server URL" />
+            <TextBox x:Name="Fallback" Header="Fallback URL (optional, e.g. https://photos.example.com)" />
+            <NumberBox x:Name="CacheMb" Header="Offline cache size (MB)" Minimum="100" Maximum="500000" SpinButtonPlacementMode="Inline" SmallChange="256" />
+
+            <TextBlock Text="Claude pipeline" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,12,0,0" />
+            <ToggleSwitch x:Name="Auto" Header="Classify new photos automatically" />
+            <ToggleSwitch x:Name="Review" Header="Ask me to approve changes first" />
+            <NumberBox x:Name="Poll" Header="Check for new photos every (minutes)" Minimum="1" Maximum="240" SpinButtonPlacementMode="Inline" />
+            <NumberBox x:Name="Cap" Header="Daily limit of automatic classifications" Minimum="1" Maximum="100000" SpinButtonPlacementMode="Inline" />
+            <TextBox x:Name="ClaudeCmd" Header="Claude command" />
+            <TextBox x:Name="Prompt" Header="Classify prompt ({path} = image file)" AcceptsReturn="True" TextWrapping="Wrap" Height="140" />
+            <TextBox x:Name="Develop" Header="RAW develop command (use {input} and {output}; leave empty to skip)" />
+
+            <TextBlock Text="Watched folders (auto-upload)" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,12,0,0" />
+            <ListView x:Name="Folders" Height="110" SelectionMode="Single" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="Add folder…" Click="OnAddFolder" />
+                <Button Content="Remove selected" Click="OnRemoveFolder" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,16,0,0">
+                <Button Content="Save" Style="{StaticResource AccentButtonStyle}" Click="OnSave" />
+                <Button Content="Sign out" Click="OnSignOut" />
+                <TextBlock x:Name="Saved" VerticalAlignment="Center" Opacity="0.7" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImmichWin.Core", "src\Immic
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImmichWin.Core.Tests", "tests\ImmichWin.Core.Tests\ImmichWin.Core.Tests.csproj", "{919A285D-4789-4B5F-8E39-005A30E25DDE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImmichWin.App", "src\ImmichWin.App\ImmichWin.App.csproj", "{93281E34-5DD4-4033-9434-EF32FE31C621}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +45,18 @@ Global
 		{919A285D-4789-4B5F-8E39-005A30E25DDE}.Release|x64.Build.0 = Release|Any CPU
 		{919A285D-4789-4B5F-8E39-005A30E25DDE}.Release|x86.ActiveCfg = Release|Any CPU
 		{919A285D-4789-4B5F-8E39-005A30E25DDE}.Release|x86.Build.0 = Release|Any CPU
+		{93281E34-5DD4-4033-9434-EF32FE31C621}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{93281E34-5DD4-4033-9434-EF32FE31C621}.Debug|Any CPU.Build.0 = Debug|x64
+		{93281E34-5DD4-4033-9434-EF32FE31C621}.Debug|x64.ActiveCfg = Debug|x64
+		{93281E34-5DD4-4033-9434-EF32FE31C621}.Debug|x64.Build.0 = Debug|x64
+		{93281E34-5DD4-4033-9434-EF32FE31C621}.Debug|x86.ActiveCfg = Debug|x64
+		{93281E34-5DD4-4033-9434-EF32FE31C621}.Debug|x86.Build.0 = Debug|x64
+		{93281E34-5DD4-4033-9434-EF32FE31C621}.Release|Any CPU.ActiveCfg = Release|x64
+		{93281E34-5DD4-4033-9434-EF32FE31C621}.Release|Any CPU.Build.0 = Release|x64
+		{93281E34-5DD4-4033-9434-EF32FE31C621}.Release|x64.ActiveCfg = Release|x64
+		{93281E34-5DD4-4033-9434-EF32FE31C621}.Release|x64.Build.0 = Release|x64
+		{93281E34-5DD4-4033-9434-EF32FE31C621}.Release|x86.ActiveCfg = Release|x64
+		{93281E34-5DD4-4033-9434-EF32FE31C621}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -50,5 +64,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{445072DB-F942-49CA-80CE-3A65942235F4} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{919A285D-4789-4B5F-8E39-005A30E25DDE} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{93281E34-5DD4-4033-9434-EF32FE31C621} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

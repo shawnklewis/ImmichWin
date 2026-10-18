@@ -1,0 +1,23 @@
+<Page
+    x:Class="ImmichWin.App.AlbumsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:ImmichWin.App">
+    <Grid RowDefinitions="Auto,Auto,*" Padding="12">
+        <TextBlock Text="Albums" Style="{StaticResource TitleTextBlockStyle}" />
+        <InfoBar x:Name="Bar" Grid.Row="1" IsOpen="False" IsClosable="False" Severity="Warning" Margin="0,8,0,0" />
+        <GridView x:Name="List" Grid.Row="2" IsItemClickEnabled="True" ItemClick="OnClick" SelectionMode="None" Margin="0,8,0,0">
+            <GridView.ItemTemplate>
+                <DataTemplate x:DataType="local:AlbumItem">
+                    <StackPanel Width="180" Spacing="4">
+                        <Grid Height="180" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                            <Image Source="{x:Bind Thumb, Mode=OneWay}" Stretch="UniformToFill" />
+                        </Grid>
+                        <TextBlock Text="{x:Bind Album.AlbumName}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{x:Bind CountText}" Opacity="0.6" />
+                    </StackPanel>
+                </DataTemplate>
+            </GridView.ItemTemplate>
+        </GridView>
+    </Grid>
+</Page>

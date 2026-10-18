@@ -1,0 +1,14 @@
+<Page
+    x:Class="ImmichWin.App.SignInPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel MaxWidth="460" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12" Margin="24">
+        <TextBlock Text="Connect to Immich" Style="{StaticResource TitleTextBlockStyle}" />
+        <TextBlock Text="Unofficial client for your own Immich server." Opacity="0.7" />
+        <TextBox x:Name="UrlBox" Header="Server URL" PlaceholderText="http://localhost:2283" />
+        <PasswordBox x:Name="KeyBox" Header="API key (Account Settings → API Keys)" />
+        <Button x:Name="Go" Content="Sign in" Style="{StaticResource AccentButtonStyle}" Click="OnSignIn" />
+        <ProgressRing x:Name="Busy" IsActive="False" Width="24" Height="24" HorizontalAlignment="Left" />
+        <InfoBar x:Name="Err" IsOpen="False" Severity="Error" IsClosable="False" />
+    </StackPanel>
+</Page>
