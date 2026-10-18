@@ -217,3 +217,25 @@ public class PipelineWorkerTests
         Assert.Equal("done", r.Db.GetProcessedStatus("r1"));
     }
 }
+
+public class PreviewNotReadyTests
+{
+    [Fact]
+    public async Task Preview_404_releases_claim_and_retries_on_next_poll()
+    {
+        var api = new FakeApi { NotReady = true }; var db = new StateDb(":memory:"); var s = new AppSettings();
+        var cache = new AssetCache(db, Path.Combine(Path.GetTempPath(), "nr" + Guid.NewGuid()), () => long.MaxValue);
+        var runner = new FakeRunner((_, _) => new ProcessResult(0, "{\"tags\":[\"x\"]}", ""));
+        var up = new Uploader(api, db);
+        var w = new PipelineWorker(api, cache, new ClaudeRunner(runner, () => "claude", () => s.ClassifyPrompt), new Applier(api, db),
+            new Developer(runner, cache, api, up, db, () => null, Path.GetTempPath()), db, () => s);
+        await w.PollOnceAsync(); // baseline
+        var a = new AssetDto { Id = "n1", OriginalFileName = "n.jpg" };
+        api.Pages.Enqueue(new SearchPage([a], null));
+        Assert.Equal(0, await w.PollOnceAsync());
+        Assert.Null(db.GetProcessedStatus("n1"));            // released, not failed
+        api.NotReady = false;
+        api.Pages.Enqueue(new SearchPage([a], null));
+        Assert.Equal(1, await w.PollOnceAsync());             // window was kept open, so it is retried
+    }
+}

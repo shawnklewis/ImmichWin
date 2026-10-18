@@ -106,7 +106,7 @@ public sealed class ClaudeRunner(IProcessRunner runner, Func<string> command, Fu
         var prompt = promptTemplate().Replace("{path}", imagePath);
         var args = new[] { "-p", prompt, "--allowedTools", "Read", "--output-format", "text" };
         var res = await runner.RunAsync(command(), args, Path.GetDirectoryName(imagePath), TimeSpan.FromMinutes(3), ct);
-        if (res.ExitCode != 0) throw new ClassificationException($"claude exited {res.ExitCode}: {Truncate(res.Stderr)}");
+        if (res.ExitCode != 0) throw new ClassificationException($"claude exited {res.ExitCode}: {Truncate(string.IsNullOrWhiteSpace(res.Stderr) ? res.Stdout : res.Stderr)}");
         return ResultParser.Parse(res.Stdout);
     }
 

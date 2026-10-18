@@ -48,6 +48,11 @@ public sealed class ImmichClient : IImmichApi
             res.Dispose();
             throw new ImmichException(ErrorKind.Unauthorized, "API key rejected");
         }
+        if (res.StatusCode == HttpStatusCode.NotFound)
+        {
+            res.Dispose();
+            throw new ImmichException(ErrorKind.NotFound, "Not found");
+        }
         if (!res.IsSuccessStatusCode)
         {
             var body = await res.Content.ReadAsStringAsync(ct);

@@ -55,7 +55,7 @@ public sealed record UploadResult(string AssetId, bool Duplicate);
 
 public sealed record DuplicateCheck(string ClientId, string Sha1);
 
-public enum ErrorKind { Unreachable, Unauthorized, Server }
+public enum ErrorKind { Unreachable, Unauthorized, NotFound, Server }
 
 public sealed class ImmichException(ErrorKind kind, string message, Exception? inner = null) : Exception(message, inner)
 {

@@ -94,6 +94,7 @@ public sealed class Developer(IProcessRunner runner, AssetCache cache, IImmichAp
 public sealed class PipelineWorker(
     IImmichApi api, AssetCache cache, ClaudeRunner claude, Applier applier, Developer developer, StateDb db, Func<AppSettings> settings)
 {
+    int _notReady;
     public const string DevelopedTag = "ai/developed";
     public event Action<string>? Log;
     CancellationTokenSource? _cts;
@@ -126,7 +127,7 @@ public sealed class PipelineWorker(
     /// <summary>One poll: find assets uploaded since the last poll and process each. First ever poll only records "now" (new assets only).</summary>
     public async Task<int> PollOnceAsync(CancellationToken ct = default)
     {
-        var started = DateTimeOffset.UtcNow;
+        var started = DateTimeOffset.UtcNow; _notReady = 0;
         var last = db.GetKv("lastSeen");
         if (last == null) { db.SetKv("lastSeen", started.ToString("o")); return 0; }
         var after = DateTimeOffset.Parse(last).AddMinutes(-1);
@@ -145,7 +146,8 @@ public sealed class PipelineWorker(
             if (db.ProcessedToday() >= settings().DailyCap) { Log?.Invoke("Daily cap reached"); return done; }
             if (await ProcessAsync(a, ct)) done++;
         }
-        db.SetKv("lastSeen", started.ToString("o"));
+        // Keep the window open while previews are still being generated server-side (up to 6h).
+        if (_notReady == 0 || started - after > TimeSpan.FromHours(6)) db.SetKv("lastSeen", started.ToString("o"));
         return done;
     }
 
@@ -181,7 +183,8 @@ public sealed class PipelineWorker(
         catch (Exception e) when (e is ClassificationException or ImmichException or CacheMissException or IOException)
         {
             // Unreachable server / transient problems: release so the next poll retries; hard failures are marked.
-            if (e is ImmichException { Kind: ErrorKind.Unreachable } or CacheMissException) db.Release(a.Id);
+            if (e is ImmichException { Kind: ErrorKind.NotFound }) { _notReady++; db.Release(a.Id); }
+            else if (e is ImmichException { Kind: ErrorKind.Unreachable } or CacheMissException) db.Release(a.Id);
             else db.SetProcessed(a.Id, "failed", e.Message);
             Log?.Invoke($"Failed {a.OriginalFileName}: {e.Message}");
             return false;

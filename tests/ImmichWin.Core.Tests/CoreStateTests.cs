@@ -7,13 +7,14 @@ namespace ImmichWin.Core.Tests;
 
 sealed class FakeApi : IImmichApi
 {
-    public int ThumbCalls; public bool Down; public int Size = 10;
+    public int ThumbCalls; public bool NotReady; public bool Down; public int Size = 10;
     public Task<UserInfo> ValidateAsync(CancellationToken ct = default) => throw new NotImplementedException();
     public Task<SearchPage> SearchAsync(SearchQuery q, CancellationToken ct = default) => Down ? throw new ImmichException(ErrorKind.Unreachable, "down") : Task.FromResult(Pages.Count > 0 ? Pages.Dequeue() : new SearchPage([], null));
     public Queue<SearchPage> Pages = new();
     public Task<Stream> GetThumbnailAsync(string id, ThumbSize size, CancellationToken ct = default)
     {
         ThumbCalls++;
+        if (NotReady) throw new ImmichException(ErrorKind.NotFound, "nf");
         if (Down) throw new ImmichException(ErrorKind.Unreachable, "down");
         return Task.FromResult<Stream>(new MemoryStream(new byte[Size]));
     }
