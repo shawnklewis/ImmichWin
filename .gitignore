@@ -1,0 +1,8 @@
+bin/
+obj/
+.vs/
+*.user
+*.pfx
+appsettings.local.json
+AppPackages/
+.superpowers/
