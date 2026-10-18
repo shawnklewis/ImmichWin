@@ -40,6 +40,18 @@ public sealed class Applier(IImmichApi api, StateDb db)
         }
     }
 
+    /// <summary>Applies a queued ("pending") classification after the user approves it.</summary>
+    public async Task ApprovePendingAsync(long changeId, CancellationToken ct = default)
+    {
+        var c = db.GetChange(changeId);
+        if (c is not { Type: "pending", Undone: false }) return;
+        var result = JsonSerializer.Deserialize<ClassificationResult>(c.Ref)!;
+        await ApplyAsync(new AssetDto { Id = c.AssetId }, result, ct);
+        db.MarkUndone(changeId);
+    }
+
+    public void RejectPending(long changeId) => db.MarkUndone(changeId);
+
     public async Task UndoAsync(long changeId, CancellationToken ct = default)
     {
         var c = db.GetChange(changeId);
