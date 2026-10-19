@@ -87,7 +87,7 @@ public static class ResultParser
 
     static string Clean(string s, int max)
     {
-        var c = Regex.Replace(BadChars.Replace(s, ""), @"s+", " ").Trim();
+        var c = Regex.Replace(BadChars.Replace(s, ""), @"\s+", " ").Trim();
         return c.Length > max ? c[..max].Trim() : c;
     }
 
