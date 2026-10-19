@@ -81,9 +81,25 @@ public sealed class StateDb : IDisposable
             cmd.CommandText = "INSERT OR IGNORE INTO processed(asset_id,status,at) VALUES($a,'claimed',$t)";
             cmd.Parameters.AddWithValue("$a", assetId);
             cmd.Parameters.AddWithValue("$t", Now());
+            if (cmd.ExecuteNonQuery() == 1) return true;
+            // already known: only a row waiting for retry may be claimed again
+            cmd.CommandText = "UPDATE processed SET status='claimed', at=$t WHERE asset_id=$a AND status='retry'";
             return cmd.ExecuteNonQuery() == 1;
         }
     }
+
+    /// <summary>Marks an asset to be picked up again on a later poll. countAttempt=false for outages that are not the asset's fault.</summary>
+    public void SetRetry(string assetId, string? error, bool countAttempt) =>
+        Exec("UPDATE processed SET status='retry', error=$e, at=$t, attempts=attempts+$n WHERE asset_id=$a", ("$e", error), ("$t", Now()), ("$n", countAttempt ? 1 : 0), ("$a", assetId));
+
+    public int Attempts(string assetId) =>
+        Query("SELECT attempts FROM processed WHERE asset_id=$a", r => r.GetInt32(0), ("$a", assetId)).FirstOrDefault();
+
+    /// <summary>Rows left in 'claimed' by a process that was killed mid-work.</summary>
+    public void RecoverStaleClaims() => Exec("UPDATE processed SET status='retry' WHERE status='claimed'");
+
+    public bool IsPipelineCreated(string assetId) =>
+        Query("SELECT 1 FROM changes WHERE type='asset_created' AND ref=$a", r => 1, ("$a", assetId)).Count > 0;
 
     public void SetProcessed(string assetId, string status, string? error = null) =>
         Exec("UPDATE processed SET status=$s, error=$e, at=$t, attempts=attempts+1 WHERE asset_id=$a", ("$s", status), ("$e", error), ("$t", Now()), ("$a", assetId));

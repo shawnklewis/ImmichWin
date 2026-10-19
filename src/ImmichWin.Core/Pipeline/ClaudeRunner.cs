@@ -6,7 +6,10 @@ namespace ImmichWin.Pipeline;
 
 public sealed record ClassificationResult(IReadOnlyList<string> Tags, IReadOnlyList<string> Albums, bool Develop, string Notes);
 
-public sealed class ClassificationException(string message) : Exception(message);
+public class ClassificationException(string message) : Exception(message);
+
+/// <summary>Claude answered, but not with usable JSON. Deterministic, so not worth retrying.</summary>
+public sealed class ClassificationFormatException(string message) : ClassificationException(message);
 
 public sealed record ProcessResult(int ExitCode, string Stdout, string Stderr);
 
@@ -54,14 +57,14 @@ public static class ResultParser
 
     public static ClassificationResult Parse(string stdout)
     {
-        var json = ExtractJson(stdout) ?? throw new ClassificationException("No JSON object in Claude output");
+        var json = ExtractJson(stdout) ?? throw new ClassificationFormatException("No JSON object in Claude output");
         JsonDocument doc;
         try { doc = JsonDocument.Parse(json); }
-        catch (JsonException e) { throw new ClassificationException("Malformed JSON: " + e.Message); }
+        catch (JsonException e) { throw new ClassificationFormatException("Malformed JSON: " + e.Message); }
         using (doc)
         {
             var root = doc.RootElement;
-            if (root.ValueKind != JsonValueKind.Object) throw new ClassificationException("JSON is not an object");
+            if (root.ValueKind != JsonValueKind.Object) throw new ClassificationFormatException("JSON is not an object");
             var tags = Strings(root, "tags").Select(CleanTag).Where(t => t != null).Select(t => "ai/" + t)
                 .Distinct(StringComparer.OrdinalIgnoreCase).Take(MaxTags).ToList();
             var albums = Strings(root, "albums").Select(a => Clean(a, 60)).Where(a => a.Length > 0)

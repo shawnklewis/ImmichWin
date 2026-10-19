@@ -43,7 +43,7 @@ public class ResultParserTests
     [Theory]
     [InlineData("no json here")]
     [InlineData("{ not valid json }")]
-    public void Malformed_throws(string s) => Assert.Throws<ClassificationException>(() => ResultParser.Parse(s));
+    public void Malformed_throws(string s) => Assert.ThrowsAny<ClassificationException>(() => ResultParser.Parse(s));
 }
 
 public class UploaderTests
@@ -165,7 +165,7 @@ public class PipelineWorkerTests
     {
         using var r = new Rig(); r.Api.Down = true;
         Assert.False(await r.W.ProcessAsync(Asset("a1"), default));
-        Assert.Null(r.Db.GetProcessedStatus("a1"));
+        Assert.Equal("retry", r.Db.GetProcessedStatus("a1"));
     }
 
     [Fact]
@@ -233,7 +233,7 @@ public class PreviewNotReadyTests
         var a = new AssetDto { Id = "n1", OriginalFileName = "n.jpg" };
         api.Pages.Enqueue(new SearchPage([a], null));
         Assert.Equal(0, await w.PollOnceAsync());
-        Assert.Null(db.GetProcessedStatus("n1"));            // released, not failed
+        Assert.Equal("retry", db.GetProcessedStatus("n1"));       // retryable, not failed
         api.NotReady = false;
         api.Pages.Enqueue(new SearchPage([a], null));
         Assert.Equal(1, await w.PollOnceAsync());             // window was kept open, so it is retried

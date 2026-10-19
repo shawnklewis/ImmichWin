@@ -38,7 +38,7 @@ public sealed class Uploader(IImmichApi api, StateDb db)
             db.RecordUpload(sha1, res.AssetId);
             return res.Duplicate ? new UploadOutcome.Duplicate(res.AssetId) : new UploadOutcome.Uploaded(res.AssetId);
         }
-        catch (IOException e) { return new UploadOutcome.Failed(e.Message); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return new UploadOutcome.Failed(e.Message); }
         catch (ImmichException e) { return new UploadOutcome.Failed(e.Message); }
     }
 }
@@ -48,20 +48,25 @@ public sealed class FolderWatcher : IDisposable
     readonly List<FileSystemWatcher> _watchers = [];
     readonly Uploader _uploader;
     readonly string[] _ignoreRoots;
+    readonly int _stableDelayMs;
+    readonly List<string> _folders = [];
     public event Action<string, UploadOutcome>? Result;
 
     static readonly HashSet<string> Exts = [".jpg", ".jpeg", ".png", ".heic", ".webp", ".gif", ".mp4", ".mov",
         ".dng", ".cr2", ".cr3", ".nef", ".arw", ".raf", ".orf", ".rw2"];
 
-    public FolderWatcher(IEnumerable<string> folders, Uploader uploader, IEnumerable<string> ignoreRoots)
+    public FolderWatcher(IEnumerable<string> folders, Uploader uploader, IEnumerable<string> ignoreRoots, int stableDelayMs = 2000)
     {
         _uploader = uploader;
+        _stableDelayMs = stableDelayMs;
         _ignoreRoots = ignoreRoots.Select(Path.GetFullPath).ToArray();
         foreach (var f in folders.Where(Directory.Exists))
         {
             var w = new FileSystemWatcher(f) { IncludeSubdirectories = true, EnableRaisingEvents = true };
-            w.Created += (_, e) => _ = HandleAsync(e.FullPath);
-            w.Renamed += (_, e) => _ = HandleAsync(e.FullPath);
+            _folders.Add(f);
+            w.Created += (_, e) => _ = HandlePathAsync(e.FullPath);
+            w.Renamed += (_, e) => _ = HandlePathAsync(e.FullPath);
+            w.Error += (_, _) => _ = RescanAsync();      // buffer overflow etc.: look at everything again (uploads are de-duplicated)
             _watchers.Add(w);
         }
     }
@@ -74,7 +79,7 @@ public sealed class FolderWatcher : IDisposable
     }
 
     /// <summary>Waits until the file's size stops changing and it can be opened.</summary>
-    public static async Task<bool> WaitStableAsync(string path, int tries = 20, int delayMs = 500)
+    public static async Task<bool> WaitStableAsync(string path, int tries = 900, int delayMs = 2000)
     {
         long last = -1;
         for (var i = 0; i < tries; i++)
@@ -93,10 +98,29 @@ public sealed class FolderWatcher : IDisposable
         return false;
     }
 
-    async Task HandleAsync(string path)
+    async Task HandlePathAsync(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))                    // a populated folder was moved/copied in: no per-file events are raised for its contents
+            {
+                foreach (var file in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories)) await HandleFileAsync(file);
+                return;
+            }
+            await HandleFileAsync(path);
+        }
+        catch (Exception e) { Result?.Invoke(path, new UploadOutcome.Failed(e.Message)); }
+    }
+
+    async Task RescanAsync()
+    {
+        foreach (var f in _folders.ToList()) await HandlePathAsync(f);
+    }
+
+    async Task HandleFileAsync(string path)
     {
         if (ShouldIgnore(path, _ignoreRoots)) return;
-        if (!await WaitStableAsync(path)) { Result?.Invoke(path, new UploadOutcome.Failed("File never became readable")); return; }
+        if (!await WaitStableAsync(path, delayMs: _stableDelayMs)) { Result?.Invoke(path, new UploadOutcome.Failed("File never became readable")); return; }
         Result?.Invoke(path, await _uploader.UploadFileAsync(path));
     }
 

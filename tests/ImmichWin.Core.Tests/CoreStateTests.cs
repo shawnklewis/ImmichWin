@@ -7,13 +7,14 @@ namespace ImmichWin.Core.Tests;
 
 sealed class FakeApi : IImmichApi
 {
-    public int ThumbCalls; public bool NotReady; public bool Down; public int Size = 10;
+    public int ThumbCalls; public bool NotReady; public bool Down; public bool Unauthorized; public int Size = 10; public SearchQuery? LastQuery;
     public Task<UserInfo> ValidateAsync(CancellationToken ct = default) => throw new NotImplementedException();
-    public Task<SearchPage> SearchAsync(SearchQuery q, CancellationToken ct = default) => Down ? throw new ImmichException(ErrorKind.Unreachable, "down") : Task.FromResult(Pages.Count > 0 ? Pages.Dequeue() : new SearchPage([], null));
+    public Task<SearchPage> SearchAsync(SearchQuery q, CancellationToken ct = default) { LastQuery = q; return Down ? throw new ImmichException(ErrorKind.Unreachable, "down") : Task.FromResult(Pages.Count > 0 ? Pages.Dequeue() : new SearchPage([], null)); }
     public Queue<SearchPage> Pages = new();
     public Task<Stream> GetThumbnailAsync(string id, ThumbSize size, CancellationToken ct = default)
     {
         ThumbCalls++;
+        if (Unauthorized) throw new ImmichException(ErrorKind.Unauthorized, "401");
         if (NotReady) throw new ImmichException(ErrorKind.NotFound, "nf");
         if (Down) throw new ImmichException(ErrorKind.Unreachable, "down");
         return Task.FromResult<Stream>(new MemoryStream(new byte[Size]));
@@ -24,13 +25,15 @@ sealed class FakeApi : IImmichApi
     public Task<AlbumDto> CreateAlbumAsync(string name, CancellationToken ct = default) { var a = new AlbumDto("alb-" + name, name, 0, null); Albums.Add(a); Created.Add(name); return Task.FromResult(a); }
     public List<string> Created = [];
     public List<(string album, string asset)> AlbumAdds = [], AlbumRemoves = [];
-    public Task AddToAlbumAsync(string albumId, IEnumerable<string> ids, CancellationToken ct = default) { AlbumAdds.AddRange(ids.Select(i => (albumId, i))); return Task.CompletedTask; }
+    public HashSet<(string album, string asset)> AlreadyInAlbum = [];
+    public Task<bool> AddToAlbumAsync(string albumId, IEnumerable<string> ids, CancellationToken ct = default) { var l = ids.ToList(); AlbumAdds.AddRange(l.Select(i => (albumId, i))); return Task.FromResult(!l.All(i => AlreadyInAlbum.Contains((albumId, i)))); }
     public Task RemoveFromAlbumAsync(string albumId, IEnumerable<string> ids, CancellationToken ct = default) { AlbumRemoves.AddRange(ids.Select(i => (albumId, i))); return Task.CompletedTask; }
     public List<TagDto> Tags = [];
     public Task<IReadOnlyList<TagDto>> GetTagsAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<TagDto>>(Tags);
     public Task<TagDto> UpsertTagAsync(string name, CancellationToken ct = default) { var t = Tags.FirstOrDefault(x => x.Name == name) ?? new TagDto("tag-" + name, name, name); if (!Tags.Contains(t)) Tags.Add(t); return Task.FromResult(t); }
     public List<(string tag, string asset)> Tagged = [], Untagged = [];
-    public Task TagAssetsAsync(string tagId, IEnumerable<string> ids, CancellationToken ct = default) { Tagged.AddRange(ids.Select(i => (tagId, i))); return Task.CompletedTask; }
+    public HashSet<(string tag, string asset)> AlreadyTagged = [];
+    public Task<bool> TagAssetsAsync(string tagId, IEnumerable<string> ids, CancellationToken ct = default) { var l = ids.ToList(); Tagged.AddRange(l.Select(i => (tagId, i))); return Task.FromResult(!l.All(i => AlreadyTagged.Contains((tagId, i)))); }
     public Task UntagAssetsAsync(string tagId, IEnumerable<string> ids, CancellationToken ct = default) { Untagged.AddRange(ids.Select(i => (tagId, i))); return Task.CompletedTask; }
     public HashSet<string> KnownSha = [];
     public Task<IReadOnlyDictionary<string, bool>> CheckDuplicatesAsync(IEnumerable<DuplicateCheck> items, CancellationToken ct = default) =>

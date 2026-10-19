@@ -40,7 +40,7 @@ Camera → (your separate uploader) → Immich → **ImmichWin notices the new a
 - Every few minutes (setting) the app lists assets uploaded since the last poll. Daily limit setting protects your Claude usage.
 - Claude gets the image path and read-only file access (`--allowedTools Read`), and must reply with JSON `{"tags":[],"albums":[],"develop":false,"notes":""}`. Output is validated and clamped (≤10 tags of ≤40 chars, ≤2 albums, ≤3 new albums per run); tags are prefixed `ai/`.
 - Changes apply straight to Immich by default. Turn on *Ask me to approve changes first* to queue them. The **Activity** page lists every change with per-item **Undo** (it removes only the links the pipeline added; originals are never modified or deleted).
-- RAW development: if Claude sets `develop` for a RAW file and you've set a *RAW develop command* (e.g. a script that calls your Affinity workflow, using `{input}` and `{output}`), the JPEG is uploaded as a new asset tagged `ai/developed` (excluded from further processing). Unset = skipped.
+- RAW development: if Claude sets `develop` for a RAW file and you've set a *RAW develop command* (runs the program directly, never through a shell, e.g. `powershell -File C:\tools\develop.ps1 {input} {output}`; `{input}` is the cached RAW and `{output}` must be where the JPEG is written), the JPEG is uploaded as a new asset tagged `ai/developed` (excluded from further processing). Unset = skipped.
 - The app must be running (it lives in the tray; closing the window hides it, tray → Quit exits).
 
 ## Layout

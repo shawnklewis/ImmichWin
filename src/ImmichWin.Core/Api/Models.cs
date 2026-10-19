@@ -16,6 +16,7 @@ public sealed record AssetDto
     public string Type { get; init; } = "IMAGE";
     public string? Checksum { get; init; }
     public DateTimeOffset? FileCreatedAt { get; init; }
+    public DateTimeOffset? CreatedAt { get; init; }
     public DateTimeOffset? LocalDateTime { get; init; }
     public bool IsTrashed { get; init; }
     public List<TagDto>? Tags { get; init; }

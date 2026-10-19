@@ -13,11 +13,11 @@ public interface IImmichApi
     Task<Stream> GetOriginalAsync(string id, CancellationToken ct = default);
     Task<IReadOnlyList<AlbumDto>> GetAlbumsAsync(CancellationToken ct = default);
     Task<AlbumDto> CreateAlbumAsync(string name, CancellationToken ct = default);
-    Task AddToAlbumAsync(string albumId, IEnumerable<string> assetIds, CancellationToken ct = default);
+    Task<bool> AddToAlbumAsync(string albumId, IEnumerable<string> assetIds, CancellationToken ct = default);
     Task RemoveFromAlbumAsync(string albumId, IEnumerable<string> assetIds, CancellationToken ct = default);
     Task<IReadOnlyList<TagDto>> GetTagsAsync(CancellationToken ct = default);
     Task<TagDto> UpsertTagAsync(string name, CancellationToken ct = default);
-    Task TagAssetsAsync(string tagId, IEnumerable<string> assetIds, CancellationToken ct = default);
+    Task<bool> TagAssetsAsync(string tagId, IEnumerable<string> assetIds, CancellationToken ct = default);
     Task UntagAssetsAsync(string tagId, IEnumerable<string> assetIds, CancellationToken ct = default);
     Task<IReadOnlyDictionary<string, bool>> CheckDuplicatesAsync(IEnumerable<DuplicateCheck> items, CancellationToken ct = default);
     Task<UploadResult> UploadAsync(UploadRequest r, CancellationToken ct = default);
@@ -114,8 +114,9 @@ public sealed class ImmichClient : IImmichApi
         return (await res.Content.ReadFromJsonAsync<AlbumDto>(Json, ct))!;
     }
 
-    public async Task AddToAlbumAsync(string albumId, IEnumerable<string> assetIds, CancellationToken ct = default)
-    { using var _ = await Send(HttpMethod.Put, $"albums/{albumId}/assets", new { ids = assetIds }, ct); }
+    /// <summary>True if at least one asset was newly added (false when all were already members).</summary>
+    public async Task<bool> AddToAlbumAsync(string albumId, IEnumerable<string> assetIds, CancellationToken ct = default)
+    { using var res = await Send(HttpMethod.Put, $"albums/{albumId}/assets", new { ids = assetIds }, ct); return await AnySuccess(res, ct); }
 
     public async Task RemoveFromAlbumAsync(string albumId, IEnumerable<string> assetIds, CancellationToken ct = default)
     { using var _ = await Send(HttpMethod.Delete, $"albums/{albumId}/assets", new { ids = assetIds }, ct); }
@@ -130,8 +131,19 @@ public sealed class ImmichClient : IImmichApi
         return list![0];
     }
 
-    public async Task TagAssetsAsync(string tagId, IEnumerable<string> assetIds, CancellationToken ct = default)
-    { using var _ = await Send(HttpMethod.Put, $"tags/{tagId}/assets", new { ids = assetIds }, ct); }
+    public async Task<bool> TagAssetsAsync(string tagId, IEnumerable<string> assetIds, CancellationToken ct = default)
+    { using var res = await Send(HttpMethod.Put, $"tags/{tagId}/assets", new { ids = assetIds }, ct); return await AnySuccess(res, ct); }
+
+    static async Task<bool> AnySuccess(HttpResponseMessage res, CancellationToken ct)
+    {
+        try
+        {
+            using var doc = await JsonDocument.ParseAsync(await res.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array) return true;
+            return doc.RootElement.EnumerateArray().Any(e => e.TryGetProperty("success", out var s) && s.ValueKind == JsonValueKind.True);
+        }
+        catch (JsonException) { return true; }
+    }
 
     public async Task UntagAssetsAsync(string tagId, IEnumerable<string> assetIds, CancellationToken ct = default)
     { using var _ = await Send(HttpMethod.Delete, $"tags/{tagId}/assets", new { ids = assetIds }, ct); }
